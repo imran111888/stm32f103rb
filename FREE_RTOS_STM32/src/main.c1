@@ -1,0 +1,51 @@
+#include "stm32f1xx.h"
+
+void UART2_Init(void);
+void UART2_SendString(const char* str);
+
+int main(void)
+{
+    // Initialize UART2
+    UART2_Init();
+
+    // Transmit message
+    const char message[] = "Hello, Serial Monitor!\r\n";
+    UART2_SendString(message);
+
+    while (1) {
+        // Do other tasks if needed
+    }
+}
+
+void UART2_Init(void)
+{
+    // Enable UART2 and GPIOA clocks
+    RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
+
+    // Remap UART2 pins (Optional if you want to remap the pins)
+    AFIO->MAPR |= AFIO_MAPR_USART2_REMAP;
+
+    // Configure PA2 (Tx) as push-pull output
+    GPIOA->CRL |= GPIO_CRL_MODE2;  // Output mode, max speed 50MHz
+    GPIOA->CRL |= GPIO_CRL_CNF2_1; // Alternate function output Push-pull
+
+    // Configure UART2
+    USART2->BRR = 9600 ; // Baud rate 9600 @72MHz
+    USART2->CR1 |= USART_CR1_TE | USART_CR1_UE;
+}
+
+void UART2_SendString(const char* str)
+{
+    while (*str != '\0') {
+        // Wait until the transmit data register is empty
+        while (!(USART2->SR & USART_SR_TXE));
+
+        // Send the character
+        USART2->DR = *str++;
+
+        // Wait until transmission is complete
+        while (!(USART2->SR & USART_SR_TC));
+    }
+}
+
